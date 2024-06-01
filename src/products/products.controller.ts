@@ -13,30 +13,28 @@ import {
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError } from 'rxjs';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { PRODUCT_SERVICE } from 'src/config';
+import { NATS_SERVICE } from 'src/config';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 @Controller('products')
 export class ProductsController {
-  constructor(
-    @Inject(PRODUCT_SERVICE) private readonly productsClient: ClientProxy,
-  ) {}
+  constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
 
   @Post()
   public async createProduct(@Body() createProductDto: CreateProductDto) {
-    return this.productsClient.send({ cmd: 'create' }, createProductDto);
+    return this.client.send({ cmd: 'create' }, createProductDto);
   }
 
   @Get()
   public async findAllProducts(@Query() paginationDto: PaginationDto) {
     //La diferencia entre send y emit es que send espera una respuesta y emit no
-    return this.productsClient.send({ cmd: 'findAll' }, paginationDto);
+    return this.client.send({ cmd: 'findAll' }, paginationDto);
   }
 
   @Get(':id')
   public async findProductById(@Param('id') id: string) {
-    return this.productsClient.send({ cmd: 'findOne' }, { id }).pipe(
+    return this.client.send({ cmd: 'findOne' }, { id }).pipe(
       catchError((err) => {
         throw new RpcException(err);
       }),
@@ -55,7 +53,7 @@ export class ProductsController {
 
   @Delete(':id')
   public async deleteProduct(@Param('id') id: string) {
-    return this.productsClient.send({ cmd: 'delete' }, { id }).pipe(
+    return this.client.send({ cmd: 'delete' }, { id }).pipe(
       catchError((err) => {
         throw new RpcException(err);
       }),
@@ -66,7 +64,7 @@ export class ProductsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProductDto: UpdateProductDto,
   ) {
-    return this.productsClient
+    return this.client
       .send({ cmd: 'update' }, { id, ...updateProductDto })
       .pipe(
         catchError((err) => {
